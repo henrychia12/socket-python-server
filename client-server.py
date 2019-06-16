@@ -1,12 +1,19 @@
 import socket
-import os
-from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
 
 s = socket.socket()
 
-path = os.path.join(os.path.expanduser("~"), ".ssh", "id_rsa.pub")
-public_key_file = open(path, "rb")
-public_key = public_key_file.read()
+with open("private_key.pem", "rb") as key_file:
+	private_key = serialization.load_pem_private_key(
+		key_file.read(),
+		password=None,
+		backend=default_backend()
+	)
+	
+public_key = private_key.public_key()
 
 hostname = "henrylaptop"
 port = 8000
@@ -14,7 +21,15 @@ port = 8000
 s.connect((hostname,port))
 
 while True:
-	x = raw_input("Enter message: ")
-	s.send(x.encode() + "\n")
-	s.send(public_key.encode())
+	message = raw_input("Enter message: ")
 	
+	ciphertext = public_key.encrypt(
+	message,
+	padding.OAEP(
+		mgf = padding.MGF1(algorithm=hashes.SHA1()),
+		algorithm = hashes.SHA1(),
+		label = None
+	)
+)
+	s.send(ciphertext)
+
