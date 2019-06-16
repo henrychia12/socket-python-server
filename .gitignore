@@ -104,4 +104,4 @@ venv.bak/
 .mypy_cache/
 
 # private and public key
-.pem
+*.pem
